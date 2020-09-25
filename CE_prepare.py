@@ -22,11 +22,12 @@ Tg    = dat[:,0]                 # T [K]
 nHtot = dat[:,1]                 # n<H> [cm-3]
 lognH = np.log10(nHtot)
 press = dat[:,2]/bar             # p [bar]
+mu = dat[:,3]
 
 press = np.unique(press)
 
 #mol_list = ['H2','He','H2O','CO','CH4','NH3','Na','K']
-mol_list = ['H2','H']
+mol_list = ['H2', 'H', 'He']
 nmol = len(mol_list)
 x_mol = np.zeros((nmol,NPOINT**2))
 
@@ -47,7 +48,7 @@ for j in range(nmol):
       #plt.scatter(Tg[ist:ien],yy[ist:ien])
       #plt.xscale('log')
 
-output = open('interp_table.dat','w')
+output = open('interp_table.txt','w')
 output.write(str(NPOINT) + ' ' + str(nmol) + '\n')
 for i in range(nmol):
   output.write(mol_list[i] + '\n')
@@ -60,5 +61,5 @@ e = 0
 for j in range(NPOINT):
   print(j)
   for i in range(NPOINT):
-    output.write(' '.join(str(g) for g in x_mol[:,e]) + '\n')
+    output.write(str(mu[e]) + ' ' + ' '.join(str(g) for g in x_mol[:,e]) + '\n')
     e = e + 1
