@@ -5,7 +5,7 @@
 ! (NOTE: you have to modify GGChem to output mean molecular weight too!!!)
 !
 !
-!! TODO: Add boundary checks for temperature range!!!
+!! TODO: Add boundary checks for pressure range
 !!!
 
 module CE_interp_mod
@@ -32,7 +32,7 @@ module CE_interp_mod
   logical :: first_call = .True.
 
   public :: CE_interpolate
-  private :: CE_interpolate_init, locate, bilinear_interp
+  private :: CE_interpolate_init, locate, linear_interp, bilinear_interp
 
 contains
 
@@ -74,31 +74,70 @@ contains
    ! print*, T_t(i_tl), T_t(i_tu)
    ! print*, mu_t(i_pl,i_tu), mu_t(i_pu,i_tu)
 
-   !! Coordinates for T-p bi-linear interpolation
-   xval = log10(T_in)
-   x1 = lT_t(i_tl)
-   x2 = lT_t(i_tu)
-   yval = log10(P_in)
-   y1 = lP_t(i_pl)
-   y2 = lP_t(i_pu)
+   if (i_tl == np) then
+     !! Input higher than T grid boundary, make it = minval(T)
+     !! Perform mu linear interpolation
+     xval = log10(P_in)
+     x1 = lP_t(i_pl)
+     x2 = lP_t(i_pu)
+     y1 = mu_t(i_pl,np)
+     y2 = mu_t(i_pu,np)
+     call linear_interp(xval, x1, x2, y1, y2, yval)
+     mu_out = yval
 
-   !! Perform bi-linear interpolation for mu
-   a11 = mu_t(i_pl,i_tl)
-   a21 = mu_t(i_pu,i_tl)
-   a12 = mu_t(i_pl,i_tu)
-   a22 = mu_t(i_pu,i_tu)
-   call bilinear_interp(xval, yval, x1, x2, y1, y2, a11, a21, a12, a22, aval)
-   mu_out = aval
+     do m = 1, m_size
+       y1 = x_t(m,i_pl,np)
+       y2 = x_t(m,i_pu,np)
+       call linear_interp(xval, x1, x2, y1, y2, yval)
+       x_out(m) = 10.0_dp**yval ! Unlog for output
+     end do
 
-   !! Perform bi-linear interpolation for each species in a loop
-   do m = 1, m_size
-     a11 = x_t(m,i_pl,i_tl)
-     a21 = x_t(m,i_pu,i_tl)
-     a12 = x_t(m,i_pl,i_tu)
-     a22 = x_t(m,i_pu,i_tu)
+   else if (i_tl == 0) then
+     !! Input lower than T grid boundary, make it = minval(T)
+     !! Perform mu linear interpolation
+     xval = log10(P_in)
+     x1 = lP_t(i_pl)
+     x2 = lP_t(i_pu)
+     y1 = mu_t(i_pl,1)
+     y2 = mu_t(i_pu,1)
+     call linear_interp(xval, x1, x2, y1, y2, yval)
+     mu_out = yval
+
+     do m = 1, m_size
+       y1 = x_t(m,i_pl,1)
+       y2 = x_t(m,i_pu,1)
+       call linear_interp(xval, x1, x2, y1, y2, yval)
+       x_out(m) = 10.0_dp**yval ! Unlog for output
+     end do
+
+   else
+     !! Within T grid bounds
+     !! Coordinates for T-p bi-linear interpolation
+     xval = log10(T_in)
+     x1 = lT_t(i_tl)
+     x2 = lT_t(i_tu)
+     yval = log10(P_in)
+     y1 = lP_t(i_pl)
+     y2 = lP_t(i_pu)
+
+     !! Perform bi-linear interpolation for mu
+     a11 = mu_t(i_pl,i_tl)
+     a21 = mu_t(i_pu,i_tl)
+     a12 = mu_t(i_pl,i_tu)
+     a22 = mu_t(i_pu,i_tu)
      call bilinear_interp(xval, yval, x1, x2, y1, y2, a11, a21, a12, a22, aval)
-     x_out(m) = 10.0_dp**aval ! Unlog for output
-   end do
+     mu_out = aval
+
+     !! Perform bi-linear interpolation for each species in a loop
+     do m = 1, m_size
+       a11 = x_t(m,i_pl,i_tl)
+       a21 = x_t(m,i_pu,i_tl)
+       a12 = x_t(m,i_pl,i_tu)
+       a22 = x_t(m,i_pu,i_tu)
+       call bilinear_interp(xval, yval, x1, x2, y1, y2, a11, a21, a12, a22, aval)
+       x_out(m) = 10.0_dp**aval ! Unlog for output
+     end do
+   end if
 
   end subroutine CE_interpolate
 
@@ -175,6 +214,19 @@ contains
     idx = jl
 
   end subroutine locate
+
+  pure subroutine linear_interp(xval, x1, x2, y1, y2, yval)
+    implicit none
+
+    real(kind=dp), intent(in) :: xval, y1, y2, x1, x2
+    real(kind=dp), intent(out) :: yval
+    real(kind=dp) :: norm
+
+    norm = 1.0_dp / (x2 - x1)
+
+    yval = (y1 * (x2 - xval) + y2 * (xval - x1)) * norm
+
+  end subroutine linear_interp
 
 
   pure subroutine bilinear_interp(xval, yval, x1, x2, y1, y2, a11, a21, a12, a22, aval)
