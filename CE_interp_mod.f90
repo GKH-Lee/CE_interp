@@ -1,10 +1,11 @@
 !!!
 ! G.K.H. Lee - Sep 2020
-! A self contained module to interpolate VMR data from
+! A self contained module to interpolate mmr and VMR data from 2D GGchem data,
+! as prepared by CE_prepare.py
+! (NOTE: you have to modify GGChem to output mean molecular weight too!!!)
 !
 !
-!
-!! TODO:
+!! TODO: Add boundary checks for temperature range!!!
 !!!
 
 module CE_interp_mod

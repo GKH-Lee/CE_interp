@@ -22,6 +22,8 @@ Tg    = dat[:,0]                 # T [K]
 nHtot = dat[:,1]                 # n<H> [cm-3]
 lognH = np.log10(nHtot)
 press = dat[:,2]/bar             # p [bar]
+
+# Note, in my edited version of GGChem, I output mu on the 4th column!!
 mu = dat[:,3]
 
 # Remove pressures that are the same from the grid
