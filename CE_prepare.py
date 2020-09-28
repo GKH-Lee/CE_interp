@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pylab as plt
 
+# Read in header of GGchem 2D file
 file   = 'Static_Conc_2D.dat'
 data   = open(file)
 dummy  = data.readline()
@@ -16,7 +16,7 @@ dat = np.loadtxt(file,skiprows=3)
 keyword = np.array(header.split())
 #NPOINT = len(dat[0:])
 
-
+# Conversion factors
 bar   = 1.E+6                    # 1 bar in dyn/cm2
 Tg    = dat[:,0]                 # T [K]
 nHtot = dat[:,1]                 # n<H> [cm-3]
@@ -24,13 +24,18 @@ lognH = np.log10(nHtot)
 press = dat[:,2]/bar             # p [bar]
 mu = dat[:,3]
 
+# Remove pressures that are the same from the grid
 press = np.unique(press)
 
+# Here, make a list of molecules and elements you want,
+# NOTE: molecules are ALL CAPS e.g. (TIO2), while elements are lowercase after the first letter e.g (He, Ti, Vo)
+)
 #mol_list = ['H2','He','H2O','CO','CH4','NH3','Na','K']
 mol_list = ['H2', 'H', 'He']
 nmol = len(mol_list)
 x_mol = np.zeros((nmol,NPOINT**2))
 
+# Calcuate the volume mixing ratio
 ntot  = 0.0*nHtot
 for i in range(4,5+NELEM+NMOLE): # electrons, all atoms, ions and cations
   ntot = ntot + 10.0**dat[:,i]
@@ -48,6 +53,7 @@ for j in range(nmol):
       #plt.scatter(Tg[ist:ien],yy[ist:ien])
       #plt.xscale('log')
 
+# Output VMR and mu to a file
 output = open('interp_table.txt','w')
 output.write(str(NPOINT) + ' ' + str(nmol) + '\n')
 for i in range(nmol):
